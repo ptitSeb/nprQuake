@@ -57,7 +57,7 @@ extern	int		texture_mode;
 extern	float	gldepthmin, gldepthmax;
 
 void GL_Upload32 (unsigned *data, int width, int height,  qboolean mipmap, qboolean alpha);
-void GL_Upload8 (byte *data, int width, int height,  qboolean mipmap, qboolean alpha);
+void GL_Upload8 (byte *data, int width, int height,  qboolean mipmap, qboolean *alpha);
 int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolean mipmap, qboolean alpha);
 int GL_FindTexture (char *identifier);
 
@@ -88,8 +88,8 @@ extern	PROC glVertexPointerEXT;
 // r_local.h -- private refresh defs
 
 
-#define	BLOCK_WIDTH	(unsigned char)256//JG
-#define	BLOCK_HEIGHT	(unsigned char)256//JG
+#define	BLOCK_WIDTH		128	//(unsigned char)256//JG
+#define	BLOCK_HEIGHT	128	//(unsigned char)256//JG
 
 #define	MAX_LIGHTMAPS	64
 

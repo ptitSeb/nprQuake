@@ -18,15 +18,16 @@ static GLuint  texNum[10];
 // numbers without calling rand all the time.
 static float RandTable[RAND_TABLE_SIZE];
 // this is the 'current random number'
-static unsigned int CurRand;
+static unsigned int CurRand = 0;
 
-
+#define BLOCK_WIDTH 128
+#define BLOCK_HIEGHT 128
 static cvar_t sketch_lthickness       = { "sketch_lthickness", "2" };
 static cvar_t sketch_lalpha           = { "sketch_lalpha", "0.25" };
-static cvar_t sketch_lnumberwalls     = { "sketch_lnumberwalls", "6" };
-static cvar_t sketch_lnumbermodels    = { "sketch_lnumbermodels", "2" };
-static cvar_t sketch_lnumberparticles = { "sketch_lnumberparticles", "2" };
-static cvar_t sketch_lnumberwater     = { "sketch_lnumberwater", "6" };
+static cvar_t sketch_lnumberwalls     = { "sketch_lnumberwalls", "3" };
+static cvar_t sketch_lnumbermodels    = { "sketch_lnumbermodels", "1" };
+static cvar_t sketch_lnumberparticles = { "sketch_lnumberparticles", "1" };
+static cvar_t sketch_lnumberwater     = { "sketch_lnumberwater", "2" };
 
 static cvar_t sketch_shadows		  = { "sketch_shadows", "1" };
 
@@ -593,7 +594,7 @@ EXPORT void GL_DrawAliasFrame (aliashdr_t *paliashdr, int posenum,
 				} while (--count);
 		
 			}
-			glEnd ();
+			//glEnd ();
 		}
 	}
 
@@ -758,23 +759,27 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 		if (gl_mtexable) {
 			p = s->polys;
 
+			GLboolean alpha = glIsEnabled(GL_ALPHA_TEST);
+			if (alpha) glDisable(GL_ALPHA_TEST);
+		 
 			t = dr_R_TextureAnimation (s->texinfo->texture);
 			// Binds world to texture env 0
-			GL_SelectTexture(TEXTURE0_SGIS, gl_mtexable, qglSelectTextureSGIS, 
-                currenttexture, cnttextures );
-			dr_GL_Bind (t->gl_texturenum);
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+//			GL_SelectTexture(TEXTURE0_SGIS, gl_mtexable, qglSelectTextureSGIS, 
+//                currenttexture, cnttextures );
+//			dr_GL_Bind (t->gl_texturenum);
+//			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 			// Binds lightmap to texenv 1
-			dr_GL_DisableMultitexture(); // Same as SelectTexture (TEXTURE1)
+			//dr_GL_DisableMultitexture(); // Same as SelectTexture (TEXTURE1)
+			dr_GL_EnableMultitexture(); // Same as SelectTexture (TEXTURE1)
 			dr_GL_Bind (lightmap_textures + s->lightmaptexturenum);
 			i = s->lightmaptexturenum;
 			if (lightmap_modified[i])
 			{
 				lightmap_modified[i] = false;
 				theRect = &lightmap_rectchange[i];
-				//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, theRect->t, 
-				//	BLOCK_WIDTH, theRect->h, gl_lightmap_format, GL_UNSIGNED_BYTE,
-				//	lightmaps+(i* BLOCK_HEIGHT + theRect->t) *BLOCK_WIDTH*lightmap_bytes);
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, theRect->t, 
+					BLOCK_WIDTH, theRect->h, gl_lightmap_format, GL_UNSIGNED_BYTE,
+					lightmaps+(i* BLOCK_HEIGHT + theRect->t) *BLOCK_WIDTH*lightmap_bytes);
 				theRect->l = BLOCK_WIDTH;
 				theRect->t = BLOCK_HEIGHT;
 				theRect->h = 0;
@@ -785,14 +790,21 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 			v = p->verts[0];
 			for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
 			{
-				qglMTexCoord2fSGIS (TEXTURE0_SGIS, v[3], v[4]);
+//				qglMTexCoord2fSGIS (TEXTURE0_SGIS, v[3], v[4]);
 				qglMTexCoord2fSGIS (TEXTURE1_SGIS, v[5], v[6]);
 				glVertex3fv (v);
 			}
 			glEnd ();
+			dr_GL_DisableMultitexture();
+			
+			if (alpha) glEnable(GL_ALPHA_TEST);
+		 
 			return;
 		} else {
 			p = s->polys;
+
+			GLboolean alpha = glIsEnabled(GL_ALPHA_TEST);
+			if (alpha) glDisable(GL_ALPHA_TEST);
 
 			t = dr_R_TextureAnimation (s->texinfo->texture);
 			dr_GL_Bind (t->gl_texturenum);
@@ -800,26 +812,28 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 			v = p->verts[0];
 			for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
 			{
-				glTexCoord2f (v[3], v[4]);
+				//glTexCoord2f (v[3], v[4]);
 				glVertex3fv (v);
 			}
 			glEnd ();
 
+			glEnable(GL_TEXTURE_2D) ;
 			dr_GL_Bind (lightmap_textures + s->lightmaptexturenum);
 			glEnable (GL_BLEND);
 			glBegin (GL_POLYGON);
 			v = p->verts[0];
-			/*for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
+			for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
 			{
 				glTexCoord2f (v[5], v[6]);
 				glVertex3fv (v);
-			}*/
+			}
 			glEnd ();
 
 			glDisable (GL_BLEND);
-		}
 
-		glEnable(GL_TEXTURE_2D) ;
+			if (alpha) glEnable(GL_ALPHA_TEST);
+ 
+		}
 
 		return;
 	}
@@ -832,7 +846,7 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 	{
 		dr_GL_DisableMultitexture();
 		dr_GL_Bind (s->texinfo->texture->gl_texturenum);
-		EmitWaterPolys( s, realtime );
+		EmitWaterPolys( s, realtime);
 		return;
 	}
 
@@ -870,7 +884,8 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
                 currenttexture, cnttextures );
 		dr_GL_Bind (t->gl_texturenum);
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		dr_GL_DisableMultitexture();
+		//dr_GL_DisableMultitexture();
+		dr_GL_EnableMultitexture();
 		dr_GL_Bind (lightmap_textures + s->lightmaptexturenum);
 		i = s->lightmaptexturenum;
 		if (lightmap_modified[i])
@@ -906,7 +921,7 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 
 		t = dr_R_TextureAnimation (s->texinfo->texture);
 		dr_GL_Bind (t->gl_texturenum);
-		DrawGLWaterPoly( p, realtime );
+		DrawGLWaterPoly( p, realtime);
 
 		dr_GL_Bind (lightmap_textures + s->lightmaptexturenum);
 		glEnable (GL_BLEND);
@@ -937,6 +952,7 @@ EXPORT void DrawGLWaterPoly (glpoly_t *p, double realtime)
 	float	*v;
 	vec3_t	nv;
 
+	dr_GL_DisableMultitexture();
 	glEnable(GL_TEXTURE_2D);
 	dr_GL_Bind(texNum[(int)randFloat(0,9.999f)]);
 
@@ -991,22 +1007,24 @@ EXPORT void DrawGLWaterPolyLightmap (glpoly_t *p, double realtime)
 	glEnable(GL_BLEND) ;
 	glBlendFunc (GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
+
 	glLineWidth(sketch_lthickness.value) ;
 	glColor4f(0.0f, 0.0f, 0.0f, sketch_lalpha.value) ;
-	
+		glBegin (GL_LINE_LOOP) ;
 	for (j=0; j < sketch_lnumberwalls.value; j++)
 	{
-		glBegin (GL_LINE_LOOP) ;
+//		glBegin (GL_LINE_LOOP) ;
 		v = p->verts[0];
 		for (k=0 ; k<p->numverts ; k++, v+= VERTEXSIZE)
 		{
 			glVertex3f (v[0] + randFloat (-2.0f, 2.0f), v[1] + randFloat (-2.0f, 2.0f), v[2] + randFloat (-2.0f, 2.0f)) ;
 		}
-		glEnd ();
+//		glEnd ();
 	}
+		glEnd ();
 	glLineWidth(1.0) ;
-}
 
+}
 /*
 ================
 DrawGLPoly
@@ -1017,11 +1035,30 @@ EXPORT void DrawGLPoly (glpoly_t *p)
 	int		i;
 	float	*v;
 
+	dr_GL_DisableMultitexture();
 	glDisable(GL_BLEND);
 
 	glEnable(GL_TEXTURE_2D);
+	#if 1 			//*SEB Test
+	static GLuint old_tex = 0;
+	static int count = 0;
 
+	GLuint tex = old_tex;
+
+	if ((count++)%4) {
+		int a = (int)randFloat(0,9.999f);
+if (a>9) printf("random = %i\n", a);
+		old_tex = tex = texNum[a];
+	}
+	
+
+	dr_GL_Bind(tex);
+	#else
 	dr_GL_Bind(texNum[(int)randFloat(0,9.999f)]);
+	#endif
+
+	GLboolean alpha = glIsEnabled(GL_ALPHA_TEST);
+	if (alpha) glDisable(GL_ALPHA_TEST);
  
 	glBegin (GL_POLYGON);
 	v = p->verts[0];
@@ -1031,6 +1068,8 @@ EXPORT void DrawGLPoly (glpoly_t *p)
 		glVertex3fv (v);
 	}
 	glEnd ();
+
+	if (alpha) glEnable(GL_ALPHA_TEST);
 }
 
 
@@ -1060,6 +1099,9 @@ EXPORT void R_BlendLightmaps ( glpoly_t ** lightmap_polys, int lightmap_textures
 		return;
 
 	glDepthMask (0);		// don't bother writing Z
+	GLboolean alpha = glIsEnabled(GL_ALPHA_TEST);
+	if (alpha) glDisable(GL_ALPHA_TEST);
+ 
 
 	if (gl_lightmap_format == GL_LUMINANCE) {
 		glBlendFunc (GL_ZERO,GL_ONE_MINUS_SRC_COLOR);
@@ -1088,7 +1130,7 @@ EXPORT void R_BlendLightmaps ( glpoly_t ** lightmap_polys, int lightmap_textures
 		for ( ; p ; p=p->chain)
 		{
 			if (p->flags & SURF_UNDERWATER){
-				DrawGLWaterPolyLightmap( p, realtime );
+				//DrawGLWaterPolyLightmap( p, realtime );		//*SEB Miss compile with gcc 4.9 beta?
 			}
 			else
 			{
@@ -1109,17 +1151,19 @@ EXPORT void R_BlendLightmaps ( glpoly_t ** lightmap_polys, int lightmap_textures
 
 				glBlendFunc (GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 				glDisable(GL_TEXTURE_2D);
+					glBegin (GL_LINE_LOOP) ;
 				for (j=0; j < sketch_lnumberwalls.value; j++)
 				{
-					glBegin (GL_LINE_LOOP) ;
+					//glBegin (GL_LINE_LOOP) ;
 
 					v = p->verts[0];
 					for (k=0 ; k<p->numverts ; k++, v+= VERTEXSIZE)
 					{
 							glVertex3f (v[0] + randFloat (-2.0f, 2.0f), v[1] + randFloat (-2.0f, 2.0f), v[2] + randFloat (-2.0f, 2.0f)) ;
 					}
-					glEnd ();
+					//glEnd ();
 				}
+					glEnd ();
 
 			}
 		}
@@ -1134,6 +1178,8 @@ EXPORT void R_BlendLightmaps ( glpoly_t ** lightmap_polys, int lightmap_textures
 		glColor4f (1,1,1,1);
 	}
 
+	if (alpha) glEnable(GL_ALPHA_TEST);
+ 
 	glDepthMask (1);		// back to normal Z buffering
 }
 
@@ -1348,6 +1394,7 @@ EXPORT void EmitWaterPolys (msurface_t *fa, double realtime)
 
 	glDepthMask( 0 );
 
+		//glBegin (GL_LINES);
 	for (p=fa->polys ; p ; p=p->next)
 	{
 		//glColor4f (0.64f,0.82f,0.95f,sketch_lalpha.value);
@@ -1356,6 +1403,7 @@ EXPORT void EmitWaterPolys (msurface_t *fa, double realtime)
 		glBegin (GL_LINE_LOOP);
 		for (j=0; j < sketch_lnumberwater.value; j++)
 		{
+		//	GLfloat v0[3], v1[3];
 			for (i=0,v=p->verts[0] ; i<p->numverts ; i++, v+=VERTEXSIZE)
 			{
 				os = v[0];
@@ -1366,13 +1414,27 @@ EXPORT void EmitWaterPolys (msurface_t *fa, double realtime)
 
 				t = 25 * turbsin[(int)((os*0.125+realtime) * 600) & 255];
 				t *= (1.0/64);
-			
+
+		/*		GLfloat v2[3] = {v[0]+s+randFloat(-2.0,2.0), v[1]+t+randFloat(-2.0,2.0), v[2]+randFloat(-4.0,4.0)};
+				if (i>0) {
+					glVertex3fv(v1);
+					glVertex3fv(v2);
+					memcpy(v1, v2, 3*sizeof(GLfloat));
+				} else {
+					memcpy(v0, v1, 3*sizeof(GLfloat));
+				}
+				if (i==p->numverts) {
+					glVertex3fv(v0);
+					glVertex3fv(v1);					
+				}
+		*/
 				glVertex3f (v[0]+s+randFloat(-2.0,2.0), v[1]+t+randFloat(-2.0,2.0), v[2]+randFloat(-4.0,4.0)) ; //Raise it up and set it off to the 'right'
 			}
 		}
 		glEnd ();
 
 	}
+		//glEnd ();
 
 	glLineWidth(1.0) ;
 	glDepthMask (1);
@@ -1418,7 +1480,7 @@ EXPORT void EmitSkyPolys (msurface_t *fa, float speedscale, vec3_t r_origin)
 			s = (speedscale + dir[0]) * (1.0/128);
 			t = (speedscale + dir[1]) * (1.0/128);
 
-			glTexCoord2f (s, t);
+			//glTexCoord2f (s, t);
 			glVertex3fv (v);
 
 

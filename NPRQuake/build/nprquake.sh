@@ -1,6 +1,3 @@
-#!/bin/sh
+#!/bin/bash
 
-setxkbmap -layout us
-export LD_LIBRARY_PATH=.
-./glquake.sdl -nosound -width 640 -height 480 $@ 
-setxkbmap -layout fr
+LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH LIBGL_FB=1 ./glquake.sdl -width 800 -height 480 $@ 

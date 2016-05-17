@@ -27,10 +27,10 @@ static unsigned int CurRand;
 
 static cvar_t bprint_lthickness       = { "bprint_lthickness", "2" };
 static cvar_t bprint_lalpha           = { "bprint_lalpha", "0.25" };
-static cvar_t bprint_lnumberwalls     = { "bprint_lnumberwalls", "4" };
-static cvar_t bprint_lnumbermodels    = { "bprint_lnumbermodels", "2" };
-static cvar_t bprint_lnumberparticles = { "bprint_lnumberparticles", "2" };
-static cvar_t bprint_lnumberwater     = { "bprint_lnumberwater", "4" };
+static cvar_t bprint_lnumberwalls     = { "bprint_lnumberwalls", "1" };
+static cvar_t bprint_lnumbermodels    = { "bprint_lnumbermodels", "1" };
+static cvar_t bprint_lnumberparticles = { "bprint_lnumberparticles", "1" };
+static cvar_t bprint_lnumberwater     = { "bprint_lnumberwater", "2" };
 static cvar_t bprint_lextend          = { "bprint_lextend", "0.2" };
 static cvar_t bprint_arrowfreq        = { "bprint_arrowfreq", "0.2" };
 
@@ -707,7 +707,7 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 	{
 		dr_GL_DisableMultitexture();
 		dr_GL_Bind (s->texinfo->texture->gl_texturenum);
-		EmitWaterPolys( s, realtime );
+		EmitWaterPolys( s, realtime);
 		return;
 	}
 
@@ -781,7 +781,7 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 
 		t = dr_R_TextureAnimation (s->texinfo->texture);
 		dr_GL_Bind (t->gl_texturenum);
-		DrawGLWaterPoly( p, realtime );
+		DrawGLWaterPoly( p, realtime);
 
 		dr_GL_Bind (lightmap_textures + s->lightmaptexturenum);
 		glEnable (GL_BLEND);

@@ -14,6 +14,8 @@ static float	turbsin[] =
 
 static cvar_t dr_default_var = { "dr_default_var", "0" };
 
+#define BLOCK_WIDTH 128
+#define BLOCK_HIEGHT 128
 
 
 
@@ -321,6 +323,8 @@ EXPORT void GL_DrawAliasFrame (aliashdr_t *paliashdr, int posenum,
 	verts += posenum * paliashdr->poseverts;
 	order = (int *)((byte *)paliashdr + paliashdr->commands);
 
+	dr_GL_DisableMultitexture();
+
 	while (1)
 	{
 		// get the vertex count and primitive type
@@ -382,6 +386,8 @@ EXPORT void GL_DrawAliasShadow (aliashdr_t *paliashdr, entity_t * currententity,
 	order = (int *)((byte *)paliashdr + paliashdr->commands);
 
 	height = -lheight + 1.0;
+
+	dr_GL_DisableMultitexture();
 
 	while (1)
 	{
@@ -511,7 +517,8 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 			dr_GL_Bind (t->gl_texturenum);
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 			// Binds lightmap to texenv 1
-			dr_GL_DisableMultitexture(); // Same as SelectTexture (TEXTURE1)
+			//dr_GL_DisableMultitexture(); // Same as SelectTexture (TEXTURE1)
+			dr_GL_EnableMultitexture(); // Same as SelectTexture (TEXTURE1)
 			dr_GL_Bind (lightmap_textures + s->lightmaptexturenum);
 			i = s->lightmaptexturenum;
 			if (lightmap_modified[i])
@@ -536,6 +543,8 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 				glVertex3fv (v);
 			}
 			glEnd ();
+
+			dr_GL_DisableMultitexture();
 			return;
 		} else {
 			p = s->polys;
@@ -576,7 +585,7 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 	{
 		dr_GL_DisableMultitexture();
 		dr_GL_Bind (s->texinfo->texture->gl_texturenum);
-		EmitWaterPolys( s, realtime );
+		EmitWaterPolys( s, realtime);
 		return;
 	}
 
@@ -614,7 +623,8 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
                 currenttexture, cnttextures );
 		dr_GL_Bind (t->gl_texturenum);
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		dr_GL_DisableMultitexture();
+		//dr_GL_DisableMultitexture();
+		dr_GL_EnableMultitexture(); // Same as SelectTexture (TEXTURE1)
 		dr_GL_Bind (lightmap_textures + s->lightmaptexturenum);
 		i = s->lightmaptexturenum;
 		if (lightmap_modified[i])
@@ -650,7 +660,7 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 
 		t = dr_R_TextureAnimation (s->texinfo->texture);
 		dr_GL_Bind (t->gl_texturenum);
-		DrawGLWaterPoly( p, realtime );
+		DrawGLWaterPoly( p, realtime);
 
 		dr_GL_Bind (lightmap_textures + s->lightmaptexturenum);
 		glEnable (GL_BLEND);
@@ -734,6 +744,8 @@ EXPORT void DrawGLPoly (glpoly_t *p)
 	int		i;
 	float	*v;
 
+	dr_GL_DisableMultitexture();
+
 	glBegin (GL_POLYGON);
 	v = p->verts[0];
 	for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
@@ -767,6 +779,8 @@ EXPORT void R_BlendLightmaps ( glpoly_t ** lightmap_polys, int lightmap_textures
 		return;
 	if (!gl_texsort->value)
 		return;
+
+	dr_GL_DisableMultitexture();
 
 	glDepthMask (0);		// don't bother writing Z
 
@@ -810,8 +824,9 @@ EXPORT void R_BlendLightmaps ( glpoly_t ** lightmap_polys, int lightmap_textures
 		}
 		for ( ; p ; p=p->chain)
 		{
-			if (p->flags & SURF_UNDERWATER)
-				DrawGLWaterPolyLightmap( p, realtime );
+			if (p->flags & SURF_UNDERWATER) {
+				//DrawGLWaterPolyLightmap( p, realtime );		//*SEB Miss compile with gcc 4.9 beta?
+			}
 			else
 			{
 				glBegin (GL_POLYGON);
@@ -867,6 +882,8 @@ EXPORT void R_DrawParticles (particle_t ** active_particles, particle_t ** free_
 	
 	vec3_t			up, right;
 	float			scale;
+
+ 	dr_GL_DisableMultitexture();
 
     dr_GL_Bind(particletexture);
 	glEnable (GL_BLEND);
@@ -1018,6 +1035,7 @@ EXPORT void EmitWaterPolys (msurface_t *fa, double realtime)
 	int			i;
 	float		s, t, os, ot;
 
+	dr_GL_DisableMultitexture();
 
 	for (p=fa->polys ; p ; p=p->next)
 	{
@@ -1056,6 +1074,8 @@ EXPORT void EmitSkyPolys (msurface_t *fa, float speedscale, vec3_t r_origin)
 	float	s, t;
 	vec3_t	dir;
 	float	length;
+
+	dr_GL_DisableMultitexture();
 
 	for (p=fa->polys ; p ; p=p->next)
 	{

@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -965,6 +965,49 @@ void GL_MipMap (byte *in, int width, int height)
 
 /*
 ================
+GL_ApplyGamma
+
+Operates in place, applying gamma on all componant but the alpha channel
+================
+*/
+/*
+void GL_ApplyGamma (byte *in, int width, int height, float gamma)
+{
+	int		i, j;
+	byte	*out;
+	float f, inf;
+	static float table_gamma = 0.0f;
+	static byte table[256];
+
+	if (table_gamma != gamma) {
+		for (i=0; i<256; i++) {
+			f = powf ( (i+1)/256.0f , gamma );
+			inf = f*255 + 0.5;
+			if (inf < 0)
+				inf = 0;
+			if (inf > 255)
+				inf = 255;
+			table[i] = inf;
+		}
+		table_gamma = gamma;
+
+	}
+
+	out = in;
+
+	for (i=0 ; i<height ; i++)
+	{
+		for (j=0 ; j<width ; j++, out+=4, in+=4)
+		{
+			out[0] = table[in[0]];
+			out[1] = table[in[1]];
+			out[2] = table[in[2]];
+		}
+	}
+}
+*/
+/*
+================
 GL_MipMap8Bit
 
 Mipping for 8 bit textures
@@ -1039,6 +1082,38 @@ static	unsigned	scaled[1024*512];	// [512*256];
 	}
 #else
 texels += scaled_width * scaled_height;
+
+	static float table_gamma = 0.0f;
+	static byte table[256];
+	float f, inf;
+	byte	*out;
+
+	if (table_gamma != 0.7f) {
+		for (int i=0; i<256; i++) {
+			f = powf ( (i+1)/256.0f , 0.7f );
+			inf = f*255 + 0.5;
+			if (inf < 0)
+				inf = 0;
+			if (inf > 255)
+				inf = 255;
+			table[i] = inf;
+		}
+		table_gamma = 0.7f;
+
+	}
+
+	out = (byte*)data;
+
+	for (int i=0 ; i<height ; i++)
+	{
+		for (int j=0 ; j<width ; j++, out+=4)
+		{
+			out[0] = table[out[0]];
+			out[1] = table[out[1]];
+			out[2] = table[out[2]];
+		}
+	}
+	//GL_ApplyGamma((byte*)data, width, height, 0.7);
 
 	if (scaled_width == width && scaled_height == height)
 	{

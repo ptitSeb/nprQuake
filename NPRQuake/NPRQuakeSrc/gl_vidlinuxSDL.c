@@ -55,12 +55,16 @@ static cvar_t in_mouse = {"in_mouse", "1", false};
 static cvar_t in_dgamouse = {"in_dgamouse", "1", false};
 static cvar_t m_filter = {"m_filter", "0"};
 
+SDL_Joystick *joy;
+static int jx, jy;
 
 static int win_x, win_y;
 
 static int scr_width, scr_height;
 
 static qboolean vidmode_active = false;
+
+static qboolean noshouldermb = false;
 
 /*-----------------------------------------------------------------------*/
 
@@ -211,13 +215,23 @@ static int SDL_LateKey(SDL_keysym *sym)
 			key = K_PAUSE;
 			break;
 
-		case SDLK_LSHIFT:
 		case SDLK_RSHIFT:
+			if (noshouldermb)
+				key = K_SHIFT;
+			else
+				key = K_MOUSE2;			//*SEB Pandora Shoulnder as MB
+			break;
+		case SDLK_LSHIFT:
 			key = K_SHIFT;
 			break;
 
-		case SDLK_LCTRL:
 		case SDLK_RCTRL:
+			if (noshouldermb)
+				key = K_CTRL;
+			else
+				key = K_MOUSE1;			//*SEB Pandora Shoulnder as MB
+			break;
+		case SDLK_LCTRL:
 			key = K_CTRL;
 			break;
 
@@ -334,6 +348,13 @@ static void HandleEvents(void)
 				mx += event.motion.xrel * 2;
 				my += event.motion.yrel * 2;
 
+			}
+			break;
+
+		case SDL_JOYAXISMOTION:
+			if (event.jaxis.which == 0) {
+				if (event.jaxis.axis == 0) jx = event.jaxis.value;
+				else if (event.jaxis.axis == 1) jy = event.jaxis.value;
 			}
 			break;
 
@@ -653,7 +674,8 @@ static void Check_Gamma (unsigned char *pal)
 			(gl_vendor && strstr(gl_vendor, "3Dfx")))
 			vid_gamma = 1;
 		else
-			vid_gamma = 0.7; // default to 0.7 on non-3dfx hardware
+			//vid_gamma = 0.7; // default to 0.7 on non-3dfx hardware
+			vid_gamma = 1.2;	//*SEB boost on Pandora
 	} else
 		vid_gamma = Q_atof(com_argv[i+1]);
 
@@ -697,6 +719,9 @@ void VID_Init(unsigned char *palette)
 	vid.fullbright = 256 - LittleLong (*((int *)vid.colormap + 2048));
 
 
+	if ((i = COM_CheckParm("-noshouldermb")) != 0)
+		noshouldermb = true;
+
 	if ((i = COM_CheckParm("-window")) != 0)
 		fullscreen = false;
 
@@ -730,7 +755,7 @@ void VID_Init(unsigned char *palette)
 	if (fullscreen == true)
 		flags = flags | SDL_FULLSCREEN;
 
-	if (SDL_Init(SDL_INIT_VIDEO) == -1) {
+	if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_JOYSTICK|SDL_INIT_AUDIO) == -1) {
 		fprintf(stderr, "Could not initialize SDL: %s.\n", SDL_GetError());
 		exit(1);
 	}
@@ -778,6 +803,14 @@ void VID_Init(unsigned char *palette)
 	Con_SafePrintf ("Video mode %dx%d initialized.\n", width, height);
 
 	vid.recalc_refdef = 1;       // force a surface cache flush
+
+	if (SDL_NumJoysticks()>0) {
+		joy = SDL_JoystickOpen(0);
+		Con_SafePrintf ("Joystick found (%s)\n", SDL_JoystickName(0));
+	} else {
+		joy = NULL;
+		Con_SafePrintf ("No Joystick found\n");
+	}
 }
 
 void Sys_SendKeyEvents(void)
@@ -833,15 +866,15 @@ void IN_MouseMove (usercmd_t *cmd)
 	my *= sensitivity.value;
 
 // add mouse X/Y movement to cmd
-	if ( (in_strafe.state & 1) || (lookstrafe.value && (in_mlook.state & 1) ))
+	if ( (in_strafe.state & 1) || (lookstrafe.value && !(in_mlook.state & 1) ))
 		cmd->sidemove += m_side.value * mx;
 	else
 		cl.viewangles[YAW] -= m_yaw.value * mx;
 
-	if (in_mlook.state & 1)
+	if (!(in_mlook.state & 1))
 		V_StopPitchDrift ();
 		
-	if ( (in_mlook.state & 1) && !(in_strafe.state & 1))
+	if ( !(in_mlook.state & 1) && !(in_strafe.state & 1))
 	{
 		cl.viewangles[PITCH] += m_pitch.value * my;
 		if (cl.viewangles[PITCH] > 80)
@@ -858,10 +891,34 @@ void IN_MouseMove (usercmd_t *cmd)
 	}
 	mx = my = 0;
 }
+void IN_JoyMove (usercmd_t *cmd)
+{
+	if (!joy)
+		return;
+
+	int joyx, joyy;
+
+	joyx = jx * 500 / 32000;
+	if (joyx>500) joyx = 500;
+	if (joyx<-500) joyx = -500;
+
+	joyy = jy * 400 / 32000;
+	if (joyy>400) joyy = 400;
+	if (joyy<-400) joyy = -400;
+
+
+// add mouse X/Y movement to cmd
+	cmd->sidemove += joyx;
+
+	V_StopPitchDrift ();
+		
+	cmd->forwardmove -= joyy;
+}
 
 void IN_Move (usercmd_t *cmd)
 {
 	IN_MouseMove(cmd);
+	IN_JoyMove(cmd);
 }
 
 

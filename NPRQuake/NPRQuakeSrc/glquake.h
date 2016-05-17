@@ -251,7 +251,7 @@ void GL_Bind (int texnum);
 #define    TEXTURE0_SGIS				0x835E
 #define    TEXTURE1_SGIS				0x835F
 
-#ifndef _WIN32
+#if 0 //ndef _WIN32
 #define APIENTRY /* */
 #endif
 

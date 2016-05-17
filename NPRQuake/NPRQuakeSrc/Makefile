@@ -29,8 +29,15 @@ BUILD_RELEASE_DIR=release$(ARCH)$(GLIBC)
 
 CC=gcc -fPIC
 
-RELEASE_CFLAGS=$(BASE_CFLAGS) -O2 -fomit-frame-pointer -fexpensive-optimizations -march=native
-DEBUG_CFLAGS=$(BASE_CFLAGS) -g
+ifeq ($(ODROID),1)
+ RELEASE_CFLAGS=$(BASE_CFLAGS) -mcpu=cortex-a9 -mfpu=neon -mfloat-abi=hard -mno-unaligned-access -O3 -ffast-math -fsigned-char -fsingle-precision-constant -fdiagnostics-color=auto -fPIC -DPIC -funroll-loops -fomit-frame-pointer -fexpensive-optimizations -std=gnu99
+ DEBUG_CFLAGS=$(BASE_CFLAGS) -g -std=gnu99
+else
+ RELEASE_CFLAGS=$(BASE_CFLAGS) -mcpu=cortex-a8 -mfpu=neon -mfloat-abi=softfp -mno-unaligned-access -O3 -ffast-math -fsigned-char -fsingle-precision-constant -fdiagnostics-color=auto -fPIC -DPIC -funroll-loops -fomit-frame-pointer -fexpensive-optimizations -std=gnu99
+ DEBUG_CFLAGS=$(BASE_CFLAGS) -g -std=gnu99
+endif
+#RELEASE_CFLAGS=$(BASE_CFLAGS) -O2 -fomit-frame-pointer -fexpensive-optimizations -march=native
+#DEBUG_CFLAGS=$(BASE_CFLAGS) -g
 LDFLAGS=-lm
 CFLAGS=$(RELEASE_CFLAGS)
 
@@ -134,12 +141,13 @@ GLQUAKE_OBJS= \
 	$(BUILDDIR)/glquake/snd_dma.o \
 	$(BUILDDIR)/glquake/snd_mem.o \
 	$(BUILDDIR)/glquake/snd_mix.o \
-	$(BUILDDIR)/glquake/snd_linux.o \
+	$(BUILDDIR)/glquake/snd_sdl.o \
 	\
-	$(BUILDDIR)/glquake/math.o \
-	$(BUILDDIR)/glquake/worlda.o \
-	$(BUILDDIR)/glquake/snd_mixa.o \
-	$(BUILDDIR)/glquake/sys_dosa.o
+#	$(BUILDDIR)/glquake/snd_linux.o \
+#	$(BUILDDIR)/glquake/math.o \
+#	$(BUILDDIR)/glquake/worlda.o \
+#	$(BUILDDIR)/glquake/snd_mixa.o \
+#	$(BUILDDIR)/glquake/sys_dosa.o
 
 GLSVGA_OBJS=$(BUILDDIR)/glquake/gl_vidlinux.o
 
@@ -176,7 +184,7 @@ $(BUILDDIR)/glquake/cmd.o :          cmd.c
 	$(DO_GL_CC)
 
 $(BUILDDIR)/glquake/common.o :       common.c
-	$(DO_GL_DEBUG_CC)
+	$(DO_GL_CC)
 
 $(BUILDDIR)/glquake/console.o :      console.c
 	$(DO_GL_CC)
@@ -314,6 +322,9 @@ $(BUILDDIR)/glquake/snd_mix.o :      snd_mix.c
 	$(DO_GL_CC)
 
 $(BUILDDIR)/glquake/snd_linux.o :    snd_linux.c
+	$(DO_GL_CC)
+
+$(BUILDDIR)/glquake/snd_sdl.o :    snd_sdl.c
 	$(DO_GL_CC)
 
 $(BUILDDIR)/glquake/math.o :         math.s

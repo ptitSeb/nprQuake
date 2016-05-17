@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #else
 #define id386	0
 #endif
+#define id386	0
 
 // !!! must be kept the same as in d_iface.h !!!
 #define TRANSPARENT_COLOR	255

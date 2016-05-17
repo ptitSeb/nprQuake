@@ -856,13 +856,12 @@ COM_FileBase
 void COM_FileBase (char *in, char *out)
 {
 	char *s, *s2;
-	
 	s = in + strlen(in) - 1;
 	
 	while (s != in && *s != '.')
 		s--;
 	
-	for (s2 = s ; *s2 && *s2 != '/' ; s2--)
+	for (s2 = s ; *s2 && *s2 != '/' && s2 != in ; s2--)		//*SEB added && s2 != in ... but it wasn't here ?
 	;
 	
 	if (s-s2 < 2)
@@ -1396,7 +1395,7 @@ int COM_FindFile (char *filename, int *handle, FILE **file)
 			for (i=0 ; i<pak->numfiles ; i++)
 				if (!strcmp (pak->files[i].name, filename))
 				{       // found it!
-					Sys_Printf ("PackFile: %s : %s\n",pak->filename, filename);
+					//Sys_Printf ("PackFile: %s : %s\n",pak->filename, filename);
 					if (handle)
 					{
 						*handle = pak->handle;
@@ -1448,7 +1447,7 @@ int COM_FindFile (char *filename, int *handle, FILE **file)
 				strcpy (netpath, cachepath);
 			}	
 
-			Sys_Printf ("FindFile: %s\n",netpath);
+			//Sys_Printf ("FindFile: %s\n",netpath);
 			com_filesize = Sys_FileOpenRead (netpath, &i);
 			if (handle)
 				*handle = i;
@@ -1571,7 +1570,7 @@ byte *COM_LoadFile (char *path, int usehunk)
 	((byte *)buf)[len] = 0;
 
 	Draw_BeginDisc ();
-	Sys_FileRead (h, buf, len);                     
+	Sys_FileRead (h, buf, len);
 	COM_CloseFile (h);
 	Draw_EndDisc ();
 

@@ -999,7 +999,6 @@ void PR_LoadProgs (void)
 
 	for (i=0 ; i<com_filesize ; i++)
 		CRC_ProcessByte (&pr_crc, ((byte *)progs)[i]);
-
 // byte swap the header
 	for (i=0 ; i<sizeof(*progs)/4 ; i++)
 		((int *)progs)[i] = LittleLong ( ((int *)progs)[i] );		

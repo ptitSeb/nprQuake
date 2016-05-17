@@ -27,11 +27,11 @@ static float	turbsin[] =
 
 static cvar_t brush_lalpha           = { "brush_lalpha", "0.20" };
 
-static cvar_t brush_lnumberparticles = { "brush_lnumberparticles", "2" };
+static cvar_t brush_lnumberparticles = { "brush_lnumberparticles", "1" };
 
 // brush thickness
-static cvar_t brush_bthickness       = { "brush_bthickness", "4" };
-static cvar_t brush_lthickness       = { "brush_lthickness", "4" };
+static cvar_t brush_bthickness       = { "brush_bthickness", "2" };
+static cvar_t brush_lthickness       = { "brush_lthickness", "2" };
 static cvar_t brush_texture			 = { "brush_texture", "0" };
 
 
@@ -822,7 +822,10 @@ EXPORT void GL_DrawAliasFrame (aliashdr_t *paliashdr, int posenum,
 	glDepthMask( 0 );
 	glColor4f(0.0f, 0.0f, 0.0f, brush_lalpha.value) ;
 	glLineWidth(brush_lthickness.value) ;	
-	
+	GLboolean alpha = glIsEnabled(GL_ALPHA_TEST);
+	if (alpha) glDisable(GL_ALPHA_TEST);
+ 
+
 	
 	verts = (trivertx_t *)((byte *)paliashdr + paliashdr->posedata);
 	verts += posenum * paliashdr->poseverts;
@@ -915,6 +918,8 @@ EXPORT void GL_DrawAliasFrame (aliashdr_t *paliashdr, int posenum,
 		
 	}
 	
+	if (alpha) glEnable(GL_ALPHA_TEST);
+ 
 	glDepthMask( 1 );
 	glLineWidth(1.0f) ;
 	glEnable(GL_TEXTURE_2D);
@@ -1149,7 +1154,7 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 	{
 		dr_GL_DisableMultitexture();
 		dr_GL_Bind (s->texinfo->texture->gl_texturenum);
-		EmitWaterPolys( s, realtime );
+		EmitWaterPolys( s, realtime);
 		return;
 	}
 
@@ -1223,7 +1228,7 @@ EXPORT void R_DrawSequentialPoly (msurface_t *s, int lightmap_textures,
 
 		t = dr_R_TextureAnimation (s->texinfo->texture);
 		dr_GL_Bind (t->gl_texturenum);
-		DrawGLWaterPoly( p, realtime );
+		DrawGLWaterPoly( p, realtime);
 
 		dr_GL_Bind (lightmap_textures + s->lightmaptexturenum);
 		glEnable (GL_BLEND);
@@ -1447,8 +1452,9 @@ EXPORT void R_BlendLightmaps ( glpoly_t ** lightmap_polys, int lightmap_textures
 		}
 		for ( ; p ; p=p->chain)
 		{
-			if (p->flags & SURF_UNDERWATER)
-				DrawGLWaterPolyLightmap( p, realtime );
+			if (p->flags & SURF_UNDERWATER) {
+				//DrawGLWaterPolyLightmap( p, realtime );		////*SEB Miss compile with gcc 4.9 beta?
+			}
 			else
 			{
 				/*glBegin (GL_POLYGON);
