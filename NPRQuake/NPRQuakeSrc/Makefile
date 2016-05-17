@@ -32,9 +32,11 @@ CC=gcc -fPIC
 ifeq ($(ODROID),1)
  RELEASE_CFLAGS=$(BASE_CFLAGS) -mcpu=cortex-a9 -mfpu=neon -mfloat-abi=hard -mno-unaligned-access -O3 -ffast-math -fsigned-char -fsingle-precision-constant -fdiagnostics-color=auto -fPIC -DPIC -funroll-loops -fomit-frame-pointer -fexpensive-optimizations -std=gnu99
  DEBUG_CFLAGS=$(BASE_CFLAGS) -g -std=gnu99
+ EXTRA="ODROID=1"
 else
  RELEASE_CFLAGS=$(BASE_CFLAGS) -mcpu=cortex-a8 -mfpu=neon -mfloat-abi=softfp -mno-unaligned-access -O3 -ffast-math -fsigned-char -fsingle-precision-constant -fdiagnostics-color=auto -fPIC -DPIC -funroll-loops -fomit-frame-pointer -fexpensive-optimizations -std=gnu99
  DEBUG_CFLAGS=$(BASE_CFLAGS) -g -std=gnu99
+ EXTRA=
 endif
 #RELEASE_CFLAGS=$(BASE_CFLAGS) -O2 -fomit-frame-pointer -fexpensive-optimizations -march=native
 #DEBUG_CFLAGS=$(BASE_CFLAGS) -g
@@ -64,19 +66,19 @@ default:
 	@-mkdir $(BUILD_DEBUG_DIR) \
 		$(BUILD_DEBUG_DIR)/bin \
 		$(BUILD_DEBUG_DIR)/glquake
-	$(MAKE) targets BUILDDIR=$(BUILD_DEBUG_DIR) CFLAGS="$(CFLAGS)"
+	$(MAKE) targets BUILDDIR=$(BUILD_DEBUG_DIR) CFLAGS="$(CFLAGS)" ODROID=$(ODROID)
 
 build_debug:
 	@-mkdir $(BUILD_DEBUG_DIR) \
 		$(BUILD_DEBUG_DIR)/bin \
 		$(BUILD_DEBUG_DIR)/glquake
-	$(MAKE) targets BUILDDIR=$(BUILD_DEBUG_DIR) CFLAGS="$(DEBUG_CFLAGS)"
+	$(MAKE) targets BUILDDIR=$(BUILD_DEBUG_DIR) CFLAGS="$(DEBUG_CFLAGS)" ODROID=$(ODROID)
 
 build_release:
 	@-mkdir $(BUILD_RELEASE_DIR) \
 		$(BUILD_RELEASE_DIR)/bin \
 		$(BUILD_RELEASE_DIR)/glquake
-	$(MAKE) targets BUILDDIR=$(BUILD_RELEASE_DIR) CFLAGS="$(RELEASE_CFLAGS)"
+	$(MAKE) targets BUILDDIR=$(BUILD_RELEASE_DIR) CFLAGS="$(RELEASE_CFLAGS)" ODROID=$(ODROID)
 
 all: build_debug build_release
 
@@ -347,10 +349,10 @@ clean: clean-debug clean-release
 	rm -f squake.spec glquake.spec quake.x11.spec
 
 clean-debug:
-	$(MAKE) clean2 BUILDDIR=$(BUILD_DEBUG_DIR) CFLAGS="$(DEBUG_CFLAGS)"
+	$(MAKE) clean2 BUILDDIR=$(BUILD_DEBUG_DIR) CFLAGS="$(DEBUG_CFLAGS)" ODROID=$(ODROID)
 
 clean-release:
-	$(MAKE) clean2 BUILDDIR=$(BUILD_RELEASE_DIR) CFLAGS="$(DEBUG_CFLAGS)"
+	$(MAKE) clean2 BUILDDIR=$(BUILD_RELEASE_DIR) CFLAGS="$(DEBUG_CFLAGS)" ODROID=$(ODROID)
 
 clean2:
 	-rm -f $(GLQUAKE_OBJS) $(GLSVGA_OBJS) $(GLX_OBJS)
